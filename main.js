@@ -29,9 +29,15 @@ function setStatus(text, hide = false) {
   el.classList.toggle("hidden", hide);
 }
 
-// Avatar model URLs
-const AVATAR_MODEL_URL = "./watchdog_head.glb";
-const AVATAR_FALLBACK_URL = "https://assets.codepen.io/9177687/raccoon_head.glb";
+// Avatar model URLs — resolve from current page so it works on GitHub Pages
+function getAvatarModelUrl() {
+  try {
+    return new URL("watchdog_head.glb", window.location.href).href;
+  } catch (_) {
+    return "watchdog_head.glb";
+  }
+}
+// No raccoon fallback — use ? placeholder if watchdog fails to load
 
 function getViewportSizeAtDepth(camera, depth) {
   const viewportHeightAtDepth =
@@ -129,13 +135,14 @@ class Avatar {
     this.loader = new GLTFLoader();
     this.gltf = null;
     this.root = null;
+    this.placeholderMesh = null;
     this.morphTargetMeshes = [];
     this.loadModel(this.url);
   }
 
   loadModel(url) {
     this.url = url;
-    logMsg(`Loading avatar: ${url}`);
+    logMsg(`Loading avatar from: ${url}`);
     this.loader.load(
       url,
       (gltf) => {
@@ -155,14 +162,37 @@ class Avatar {
         if (pct === "100" || pct === "...") logMsg(`Model loading ${pct}%`);
       },
       (error) => {
-        if (this.url !== AVATAR_FALLBACK_URL) {
-          logMsg("Watchdog model not found, trying raccoon.");
-          this.loadModel(AVATAR_FALLBACK_URL);
-        } else {
-          logMsg(`Avatar load failed: ${error}`);
-        }
+        logMsg(`Watchdog load failed: ${error}. Showing ? placeholder.`);
+        this.showQuestionMarkPlaceholder();
       }
     );
+  }
+
+  showQuestionMarkPlaceholder() {
+    const canvas = document.createElement("canvas");
+    const size = 256;
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 180px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("?", size / 2, size / 2);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.encoding = THREE.sRGBEncoding;
+    const material = new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthWrite: true,
+    });
+    const geometry = new THREE.PlaneGeometry(1, 1);
+    this.placeholderMesh = new THREE.Mesh(geometry, material);
+    this.placeholderMesh.frustumCulled = false;
+    this.scene.add(this.placeholderMesh);
   }
 
   init(gltf) {
@@ -179,6 +209,7 @@ class Avatar {
   }
 
   updateBlendshapes(blendshapes) {
+    if (this.placeholderMesh) return;
     for (const mesh of this.morphTargetMeshes) {
       if (!mesh.morphTargetDictionary || !mesh.morphTargetInfluences) continue;
       for (const [name, value] of blendshapes) {
@@ -191,10 +222,15 @@ class Avatar {
 
   applyMatrix(matrix, options = {}) {
     const { scale = 1 } = options;
+    const m = matrix.clone().scale(new THREE.Vector3(scale, scale, scale));
+    if (this.placeholderMesh) {
+      this.placeholderMesh.matrixAutoUpdate = false;
+      this.placeholderMesh.matrix.copy(m);
+      return;
+    }
     if (!this.gltf) return;
-    matrix.scale(new THREE.Vector3(scale, scale, scale));
     this.gltf.scene.matrixAutoUpdate = false;
-    this.gltf.scene.matrix.copy(matrix);
+    this.gltf.scene.matrix.copy(m);
   }
 
   offsetRoot(offset, rotation) {
@@ -335,7 +371,7 @@ async function runDemo() {
   setStatus("Starting 3D view…");
   try {
     scene = new BasicScene();
-    avatar = new Avatar(AVATAR_MODEL_URL, scene.scene);
+    avatar = new Avatar(getAvatarModelUrl(), scene.scene);
     logMsg("Scene created.");
   } catch (e) {
     logMsg(`Scene error: ${e.message || e}`);
