@@ -54,9 +54,9 @@ function setStatus(text, hide = false) {
 // ---------------------------------------------------------------------------
 
 // How big / how far the head sits in front of the camera.
-// Bigger SCALE and smaller (closer to 0) DEPTH = larger on screen.
-const AVATAR_SCALE = 80;
-const AVATAR_DEPTH = -25;
+// We keep these modest and let face tracking tweak scale slightly.
+const AVATAR_SCALE = 1.0;
+const AVATAR_DEPTH = -2.5;
 
 function getAvatarModelUrl() {
   try {
@@ -164,6 +164,8 @@ class Avatar {
             texUrl,
             (texture) => {
               texture.encoding = THREE.sRGBEncoding;
+              // Apply a bright hologram-style material so the shape is clearly visible,
+              // regardless of how dark the source texture is.
               this.gltf.scene.traverse((obj) => {
                 if (obj.isMesh && obj.material) {
                   const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
@@ -171,7 +173,10 @@ class Avatar {
                     () =>
                       new THREE.MeshBasicMaterial({
                         map: texture,
+                        color: new THREE.Color("#00ffa3"), // Solana neon tint
                         morphTargets: true,
+                        transparent: true,
+                        opacity: 0.9,
                         side: THREE.DoubleSide,
                       })
                   );
@@ -249,7 +254,7 @@ class Avatar {
   setVisiblePosition() {
     if (this.placeholderMesh) {
       this.placeholderMesh.position.set(0, 0, AVATAR_DEPTH);
-      this.placeholderMesh.scale.set(-AVATAR_SCALE, AVATAR_SCALE, AVATAR_SCALE);
+      this.placeholderMesh.scale.set(-1.5, 1.5, 1.5);
       this.placeholderMesh.rotation.set(0, 0, 0);
       this.placeholderMesh.matrixAutoUpdate = true;
       return;
@@ -257,38 +262,63 @@ class Avatar {
     if (!this.gltf) return;
     const s = this.gltf.scene;
     s.position.set(0, 0, AVATAR_DEPTH);
-    s.scale.set(AVATAR_SCALE, AVATAR_SCALE, AVATAR_SCALE);
+    s.scale.set(1.5, 1.5, 1.5);
     s.rotation.set(0, Math.PI, 0);
     s.matrixAutoUpdate = true;
   }
 
   showPlaceholder() {
     if (this.placeholderMesh) return; // already created
-    const canvas = document.createElement("canvas");
-    const size = 256;
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#000";
-    ctx.fillRect(0, 0, size, size);
-    ctx.fillStyle = "#fff";
-    ctx.font = "bold 180px system-ui, sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("?", size / 2, size / 2);
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.encoding = THREE.sRGBEncoding;
-    const mat = new THREE.MeshBasicMaterial({
-      map: tex,
-      transparent: true,
-      side: THREE.DoubleSide,
-      depthWrite: true,
-    });
     const geo = new THREE.PlaneGeometry(1, 1);
-    this.placeholderMesh = new THREE.Mesh(geo, mat);
-    this.placeholderMesh.frustumCulled = false;
-    this.scene.add(this.placeholderMesh);
-    this.setVisiblePosition();
+    const loader = new THREE.TextureLoader();
+    const texUrl = new URL("wireframe-face.png", window.location.href).href;
+
+    loader.load(
+      texUrl,
+      (tex) => {
+        tex.encoding = THREE.sRGBEncoding;
+        const mat = new THREE.MeshBasicMaterial({
+          map: tex,
+          transparent: true,
+          side: THREE.DoubleSide,
+          depthWrite: true,
+        });
+        this.placeholderMesh = new THREE.Mesh(geo, mat);
+        this.placeholderMesh.frustumCulled = false;
+        this.scene.add(this.placeholderMesh);
+        this.setVisiblePosition();
+        logMsg("Wireframe hologram placeholder loaded.");
+      },
+      undefined,
+      () => {
+        // Fallback to simple ? canvas if texture is missing.
+        const canvas = document.createElement("canvas");
+        const size = 256;
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, size, size);
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 180px system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("?", size / 2, size / 2);
+        const texFallback = new THREE.CanvasTexture(canvas);
+        texFallback.encoding = THREE.sRGBEncoding;
+        const mat = new THREE.MeshBasicMaterial({
+          map: texFallback,
+          transparent: true,
+          side: THREE.DoubleSide,
+          depthWrite: true,
+        });
+        this.placeholderMesh = new THREE.Mesh(geo, mat);
+        this.placeholderMesh.frustumCulled = false;
+        this.scene.add(this.placeholderMesh);
+        this.setVisiblePosition();
+        logMsg("Wireframe hologram missing, using ? placeholder.");
+      }
+    );
   }
 
   updateBlendshapes(blendshapes) {
@@ -326,6 +356,12 @@ let video = null;
 let scene = null;
 let avatar = null;
 let loggedFirstFace = false;
+
+// Simple calibration state so we can tell the user what's happening.
+// 'idle' -> 'calibrating' -> 'success' or 'failed'
+let calibrationState = "idle";
+let calibrationStartedAt = 0;
+const CALIBRATION_TIMEOUT_MS = 7000;
 
 const BLENDSHAPE_GAIN = {
   mouth: 2.2,
@@ -366,7 +402,9 @@ function detectFaceLandmarks(time) {
     const e = matrix.elements;
     const col0 = new THREE.Vector3(e[0], e[1], e[2]);
     const headScaleRaw = col0.length() || 1;
-    const dynamicScale = (AVATAR_SCALE * 1.5) / headScaleRaw; // bigger when closer, smaller when farther
+    // Base around 1.5, but clamp to a safe range so it never explodes.
+    let dynamicScale = 1.5 / headScaleRaw;
+    dynamicScale = Math.max(0.8, Math.min(3.0, dynamicScale));
 
     avatar.applyMatrix(matrix, { scale: dynamicScale });
 
@@ -382,6 +420,10 @@ function detectFaceLandmarks(time) {
             blendshapes[0].categories.length
           }`
         );
+        if (calibrationState === "calibrating") {
+          calibrationState = "success";
+          setStatus("Calibration complete. Ready — move your face", true);
+        }
       }
     } else if (!loggedFirstFace) {
       logMsg(
@@ -470,6 +512,16 @@ async function runDemo() {
 
   // 2) Then try to start the camera for tracking.
   let cameraOk = true;
+  calibrationState = "calibrating";
+  calibrationStartedAt = performance.now();
+  setStatus("Calibrating hologram… line up your face.");
+  setTimeout(() => {
+    if (calibrationState === "calibrating") {
+      calibrationState = "failed";
+      setStatus("Calibration failed. Using default scale.");
+      logMsg("Calibration timeout reached without stable face data.");
+    }
+  }, CALIBRATION_TIMEOUT_MS);
   try {
     await streamWebcam();
   } catch (e) {
@@ -507,7 +559,8 @@ async function runDemo() {
         logMsg(`GPU failed, trying CPU.`);
       }
     }
-    setStatus("Ready — move your face", true);
+    // FaceLandmarker is ready; we still wait for first good face data to mark success.
+    setStatus("Calibrating hologram… move closer and look at the camera.");
   } catch (e) {
     const msg = e.message || String(e);
     logMsg(`MediaPipe error: ${msg}`);
