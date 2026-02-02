@@ -176,6 +176,7 @@ class Avatar {
               });
               this.scene.add(this.gltf.scene);
               this.init(this.gltf);
+              this.setDefaultVisiblePosition();
               logMsg(`Avatar loaded with watchdog texture: ${url}`);
             },
             undefined,
@@ -183,12 +184,14 @@ class Avatar {
               logMsg("Texture load failed, using model default: " + (e.message || e));
               this.scene.add(this.gltf.scene);
               this.init(this.gltf);
+              this.setDefaultVisiblePosition();
               logMsg(`Avatar loaded: ${url}`);
             }
           );
         } else {
           this.scene.add(gltf.scene);
           this.init(gltf);
+          this.setDefaultVisiblePosition();
           logMsg(`Avatar loaded: ${url}`);
         }
       },
@@ -244,6 +247,16 @@ class Avatar {
       if (!mesh.morphTargetDictionary || !mesh.morphTargetInfluences) return;
       this.morphTargetMeshes.push(mesh);
     });
+  }
+
+  // So the dog is visible before the first face matrix (avoids being clipped at origin)
+  setDefaultVisiblePosition() {
+    if (!this.gltf) return;
+    const s = this.gltf.scene;
+    s.position.set(0, 0, -40);
+    s.scale.set(40, 40, 40);
+    s.rotation.set(0, 0, 0);
+    s.matrixAutoUpdate = true;
   }
 
   updateBlendshapes(blendshapes) {
