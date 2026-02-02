@@ -95,6 +95,11 @@ class BasicScene {
       document.body.appendChild(this.renderer.domElement);
     }
 
+    // Log initial render surface info (no device IDs etc., just generic sizes).
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    logMsg(`Initial canvas size: ${w}x${h}, dpr=${window.devicePixelRatio || 1}`);
+
     const ambient = new THREE.AmbientLight(0xffffff, 0.7);
     this.scene.add(ambient);
     const dir = new THREE.DirectionalLight(0xffffff, 0.5);
@@ -135,6 +140,8 @@ class Avatar {
     this.root = null;
     this.placeholderMesh = null;
     this.morphTargetMeshes = [];
+    // Show a simple hologram placeholder immediately so something is always visible.
+    this.showPlaceholder();
     this.loadModel(url);
   }
 
@@ -194,7 +201,13 @@ class Avatar {
   addToScene() {
     this.scene.add(this.gltf.scene);
     this.init(this.gltf);
+    this.normalizeAndCenter();
     this.setVisiblePosition();
+    // Replace placeholder hologram with real dog once loaded.
+    if (this.placeholderMesh) {
+      this.scene.remove(this.placeholderMesh);
+      this.placeholderMesh = null;
+    }
     logMsg("Avatar loaded.");
   }
 
@@ -207,6 +220,30 @@ class Avatar {
         this.morphTargetMeshes.push(obj);
       }
     });
+  }
+
+  // Normalize model size and center it so it always fits the camera view.
+  normalizeAndCenter() {
+    if (!this.gltf) return;
+    const s = this.gltf.scene;
+    const box = new THREE.Box3().setFromObject(s);
+    if (!box.isEmpty()) {
+      const size = new THREE.Vector3();
+      const center = new THREE.Vector3();
+      box.getSize(size);
+      box.getCenter(center);
+      const maxSize = Math.max(size.x, size.y, size.z) || 1;
+      const targetUnitSize = 1; // normalize model so its largest dimension is ~1
+      const scaleFactor = targetUnitSize / maxSize;
+      s.scale.multiplyScalar(scaleFactor);
+      s.position.sub(center); // move model so its center is at origin
+
+      logMsg(
+        `Avatar bbox size: ${size.x.toFixed(2)} x ${size.y.toFixed(2)} x ${size.z.toFixed(
+          2
+        )}, scaleFactor=${scaleFactor.toFixed(3)}`
+      );
+    }
   }
 
   setVisiblePosition() {
@@ -226,6 +263,7 @@ class Avatar {
   }
 
   showPlaceholder() {
+    if (this.placeholderMesh) return; // already created
     const canvas = document.createElement("canvas");
     const size = 256;
     canvas.width = size;
@@ -287,6 +325,7 @@ let faceLandmarker = null;
 let video = null;
 let scene = null;
 let avatar = null;
+let loggedFirstFace = false;
 
 const BLENDSHAPE_GAIN = {
   mouth: 2.2,
@@ -319,10 +358,37 @@ function detectFaceLandmarks(time) {
   const matrices = result.facialTransformationMatrixes;
   if (matrices && matrices.length > 0) {
     const matrix = new THREE.Matrix4().fromArray(matrices[0].data);
-    avatar.applyMatrix(matrix, { scale: AVATAR_SCALE });
+
+    // Approximate how \"big\" the user's head is from the face matrix.
+    // We measure the length of the first column (scale component) and
+    // use that to adapt the avatar scale so it feels like a hologram
+    // that matches the user's head size.
+    const e = matrix.elements;
+    const col0 = new THREE.Vector3(e[0], e[1], e[2]);
+    const headScaleRaw = col0.length() || 1;
+    const dynamicScale = (AVATAR_SCALE * 1.5) / headScaleRaw; // bigger when closer, smaller when farther
+
+    avatar.applyMatrix(matrix, { scale: dynamicScale });
+
     const blendshapes = result.faceBlendshapes;
     if (blendshapes && blendshapes.length > 0) {
       avatar.updateBlendshapes(retarget(blendshapes));
+      if (!loggedFirstFace) {
+        loggedFirstFace = true;
+        logMsg(
+          `Face tracking active: headScaleRaw=${headScaleRaw.toFixed(
+            3
+          )}, dynamicScale=${dynamicScale.toFixed(2)}, blendshapes=${
+            blendshapes[0].categories.length
+          }`
+        );
+      }
+    } else if (!loggedFirstFace) {
+      logMsg(
+        `Face tracking: matrix present (headScaleRaw=${headScaleRaw.toFixed(
+          3
+        )}) but no blendshape data.`
+      );
     }
   }
 }
