@@ -2,8 +2,7 @@
 
 Real-time face-tracking avatar in the browser using **MediaPipe Face Landmarker** and **Three.js**. Works on desktop and mobile (test on your phone over HTTPS).
 
-- **Default avatar:** Raccoon head (demo model).  
-- **Your avatar:** Export a GLB from the [Watchdog Model](./Watchdog%20Model/) Blender pipeline and add `watchdog_head.glb` to the project root; the app applies `Watchdog Model/Watchdog Image.png` so it looks like your dog. If the GLB fails to load, a **?** placeholder tracks your head.
+- **Your avatar:** The app loads the 3D model and texture from the **Watchdog Model** folder: `watchdog_head.glb` and `Watchdog Image.png`. Put the exported GLB there; the texture is already there. If the GLB fails to load, a **?** placeholder tracks your head. See [ROOT-FILES.md](./ROOT-FILES.md) for required files.
 
 ## Deploy to GitHub and test on phone
 
@@ -33,16 +32,24 @@ Real-time face-tracking avatar in the browser using **MediaPipe Face Landmarker*
 
 | Path | Purpose |
 |------|--------|
-| `main.js` | App entry: Three.js scene, MediaPipe Face Landmarker, avatar GLB loading and blendshapes |
-| `src/style.css` | Layout and mobile-friendly styles |
-| `index.html` | HTML entry with settings UI and logs |
-| `Watchdog Model/` | Blender script and docs to create a watchdog GLB with MediaPipe blendshapes |
+| **Root** | |
+| `index.html` | Entry page |
+| `main.js` | App: Three.js, MediaPipe, avatar + texture |
+| `style.css` | Layout and UI styles |
+| `favicon.svg` | Tab icon |
+| `.nojekyll` | Required for GitHub Pages |
+| **Watchdog Model/** | |
+| `watchdog_head.glb` | 3D head model (app loads this) |
+| `Watchdog Image.png` | Texture (app applies this to the model) |
+| `create_watchdog_model.py` | Blender script to create the model |
+| `ART_GUIDE.md`, `blendshape_names.txt` | Docs for modeling |
+| `ROOT-FILES.md` | Full list of required files |
 
 ## Adding your watchdog avatar
 
 1. In Blender, run `Watchdog Model/create_watchdog_model.py` and export as **glTF 2.0 (.glb)** with shape keys enabled.
 2. Save as `watchdog_head.glb` in the **project root** (same folder as `index.html`).
-3. Push to GitHub; the app will load `./watchdog_head.glb` and apply the watchdog texture. If the file is missing, a **?** placeholder tracks your head.
+3. Push to GitHub; the app loads the model and texture from the **Watchdog Model** folder. If the GLB is missing, a **?** placeholder tracks your head. See [ROOT-FILES.md](./ROOT-FILES.md) for required files.
 
 See [Watchdog Model/README.md](./Watchdog%20Model/README.md) and [ART_GUIDE.md](./Watchdog%20Model/ART_GUIDE.md) for modeling details.
 

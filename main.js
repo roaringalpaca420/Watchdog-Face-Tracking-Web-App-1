@@ -29,15 +29,15 @@ function setStatus(text, hide = false) {
   el.classList.toggle("hidden", hide);
 }
 
-// Avatar model URLs — resolve from current page so it works on GitHub Pages
+// Avatar model and texture — load from Watchdog Model folder
 function getAvatarModelUrl() {
   try {
-    return new URL("watchdog_head.glb", window.location.href).href;
+    return new URL("Watchdog Model/watchdog_head.glb", window.location.href).href;
   } catch (_) {
-    return "watchdog_head.glb";
+    return "Watchdog Model/watchdog_head.glb";
   }
 }
-// If watchdog model loads, we can optionally apply Watchdog Image.png so it looks like your dog (same as other project).
+// Texture applied to the 3D model (same folder as the GLB).
 const WATCHDOG_TEXTURE_URL = "Watchdog Model/Watchdog Image.png";
 
 function getViewportSizeAtDepth(camera, depth) {
@@ -229,6 +229,7 @@ class Avatar {
     const geometry = new THREE.PlaneGeometry(1, 1);
     this.placeholderMesh = new THREE.Mesh(geometry, material);
     this.placeholderMesh.frustumCulled = false;
+    this.placeholderMesh.scale.x = -1; // mirror so it faces same way as camera view
     this.scene.add(this.placeholderMesh);
   }
 
