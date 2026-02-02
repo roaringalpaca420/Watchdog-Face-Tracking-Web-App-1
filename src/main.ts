@@ -13,9 +13,8 @@ import {
   type FaceLandmarkerResult,
 } from '@mediapipe/tasks-vision';
 
-// Use watchdog_head.glb from public/ when you have it; else raccoon demo model
+// Watchdog model (src/main.ts is not used by the live app — index.html loads main.js)
 const AVATAR_MODEL_URL = './watchdog_head.glb';
-const AVATAR_FALLBACK_URL = 'https://assets.codepen.io/9177687/raccoon_head.glb';
 
 // Debug log buffer for Logs UI
 const logLines: string[] = [];
@@ -240,12 +239,7 @@ class Avatar {
         }
       },
       (err) => {
-        if (this.url !== AVATAR_FALLBACK_URL) {
-          logMsg(`Watchdog model not found, trying raccoon.`);
-          this.loadModel(AVATAR_FALLBACK_URL);
-        } else {
-          logMsg(`Avatar load failed: ${err instanceof Error ? err.message : String(err)}`);
-        }
+        logMsg(`Avatar load failed: ${err instanceof Error ? err.message : String(err)}. Use main.js for ? placeholder.`);
       }
     );
   }

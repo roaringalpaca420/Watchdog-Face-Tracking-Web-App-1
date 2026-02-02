@@ -37,7 +37,8 @@ function getAvatarModelUrl() {
     return "watchdog_head.glb";
   }
 }
-// No raccoon fallback — use ? placeholder if watchdog fails to load
+// If watchdog model loads, we can optionally apply Watchdog Image.png so it looks like your dog (same as other project).
+const WATCHDOG_TEXTURE_URL = "Watchdog Model/Watchdog Image.png";
 
 function getViewportSizeAtDepth(camera, depth) {
   const viewportHeightAtDepth =
@@ -129,9 +130,10 @@ class BasicScene {
 }
 
 class Avatar {
-  constructor(url, scene) {
+  constructor(url, scene, options = {}) {
     this.url = url;
     this.scene = scene;
+    this.textureUrl = options.textureUrl || null;
     this.loader = new GLTFLoader();
     this.gltf = null;
     this.root = null;
@@ -151,9 +153,44 @@ class Avatar {
           this.morphTargetMeshes = [];
         }
         this.gltf = gltf;
-        this.scene.add(gltf.scene);
-        this.init(gltf);
-        logMsg(`Avatar loaded: ${url}`);
+        if (this.textureUrl) {
+          const texLoader = new THREE.TextureLoader();
+          const texUrl = this.textureUrl.startsWith("http") ? this.textureUrl : new URL(this.textureUrl, window.location.href).href;
+          texLoader.load(
+            texUrl,
+            (texture) => {
+              texture.encoding = THREE.sRGBEncoding;
+              this.gltf.scene.traverse((object) => {
+                if (object.isMesh && object.material) {
+                  const materials = Array.isArray(object.material) ? object.material : [object.material];
+                  const newMats = materials.map(
+                    () =>
+                      new THREE.MeshBasicMaterial({
+                        map: texture,
+                        morphTargets: true,
+                        side: THREE.FrontSide,
+                      })
+                  );
+                  object.material = newMats.length === 1 ? newMats[0] : newMats;
+                }
+              });
+              this.scene.add(this.gltf.scene);
+              this.init(this.gltf);
+              logMsg(`Avatar loaded with watchdog texture: ${url}`);
+            },
+            undefined,
+            (e) => {
+              logMsg("Texture load failed, using model default: " + (e.message || e));
+              this.scene.add(this.gltf.scene);
+              this.init(this.gltf);
+              logMsg(`Avatar loaded: ${url}`);
+            }
+          );
+        } else {
+          this.scene.add(gltf.scene);
+          this.init(gltf);
+          logMsg(`Avatar loaded: ${url}`);
+        }
       },
       (progress) => {
         const pct = progress.total
@@ -371,7 +408,7 @@ async function runDemo() {
   setStatus("Starting 3D view…");
   try {
     scene = new BasicScene();
-    avatar = new Avatar(getAvatarModelUrl(), scene.scene);
+    avatar = new Avatar(getAvatarModelUrl(), scene.scene, { textureUrl: WATCHDOG_TEXTURE_URL });
     logMsg("Scene created.");
   } catch (e) {
     logMsg(`Scene error: ${e.message || e}`);

@@ -3,7 +3,7 @@
 Real-time face-tracking avatar in the browser using **MediaPipe Face Landmarker** and **Three.js**. Works on desktop and mobile (test on your phone over HTTPS).
 
 - **Default avatar:** Raccoon head (demo model).  
-- **Your avatar:** Export a GLB from the [Watchdog Model](./Watchdog%20Model/) Blender pipeline and add `watchdog_head.glb` to the project root; the app will use it automatically and fall back to the raccoon if the file is missing.
+- **Your avatar:** Export a GLB from the [Watchdog Model](./Watchdog%20Model/) Blender pipeline and add `watchdog_head.glb` to the project root; the app applies `Watchdog Model/Watchdog Image.png` so it looks like your dog. If the GLB fails to load, a **?** placeholder tracks your head.
 
 ## Deploy to GitHub and test on phone
 
@@ -42,7 +42,7 @@ Real-time face-tracking avatar in the browser using **MediaPipe Face Landmarker*
 
 1. In Blender, run `Watchdog Model/create_watchdog_model.py` and export as **glTF 2.0 (.glb)** with shape keys enabled.
 2. Save as `watchdog_head.glb` in the **project root** (same folder as `index.html`).
-3. Push to GitHub; the app will load `./watchdog_head.glb` and only use the raccoon if the file is missing.
+3. Push to GitHub; the app will load `./watchdog_head.glb` and apply the watchdog texture. If the file is missing, a **?** placeholder tracks your head.
 
 See [Watchdog Model/README.md](./Watchdog%20Model/README.md) and [ART_GUIDE.md](./Watchdog%20Model/ART_GUIDE.md) for modeling details.
 
