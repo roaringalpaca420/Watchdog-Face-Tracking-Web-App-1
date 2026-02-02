@@ -19,7 +19,9 @@ import {
 
 const logLines = [];
 function logMsg(msg) {
-  const line = `[${new Date().toISOString().slice(11, 23)}] ${msg}`;
+  const now = new Date();
+  const ts = now.toISOString(); // full date + time, e.g. 2026-02-02T07:27:18.449Z
+  const line = `[${ts}] ${msg}`;
   logLines.push(line);
   console.log(msg);
   const pre = document.getElementById("logs-content");
