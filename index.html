@@ -4,9 +4,10 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
-  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="theme-color" content="#000000" />
   <title>Watchdog Face Tracking</title>
   <link rel="stylesheet" href="/src/style.css" />
+  <style>html,body{background:#000!important;color:#e0e0e0;}</style>
 </head>
 <body>
   <div class="container">
@@ -30,6 +31,48 @@
       </div>
     </div>
   </div>
+  <script>
+    (function() {
+      function byId(id) { return document.getElementById(id); }
+      var gearBtn = byId('gear-btn');
+      var panel = byId('settings-panel');
+      var closeBtn = byId('settings-close');
+      var logsOption = byId('logs-option');
+      var logsDropdown = byId('logs-dropdown');
+      var logsContent = byId('logs-content');
+      var copyBtn = byId('logs-copy');
+      var copiedMsg = byId('logs-copied-msg');
+
+      function showCopied() {
+        if (copiedMsg) { copiedMsg.hidden = false; setTimeout(function() { copiedMsg.hidden = true; }, 1500); }
+      }
+
+      if (gearBtn && panel) {
+        gearBtn.addEventListener('click', function() { panel.hidden = !panel.hidden; });
+        gearBtn.addEventListener('touchend', function(ev) { ev.preventDefault(); panel.hidden = !panel.hidden; });
+      }
+      if (closeBtn && panel) closeBtn.addEventListener('click', function() { panel.hidden = true; });
+      if (logsOption && logsDropdown && logsContent) {
+        function openLogs() {
+          var open = logsDropdown.hidden;
+          logsDropdown.hidden = !open;
+          if (open) {
+            var text = logsContent.textContent || '';
+            if (!text.trim()) text = '[App did not run or no logs yet. Check browser console (F12) for errors.]';
+            try { navigator.clipboard.writeText(text); showCopied(); } catch (_) {}
+          }
+        }
+        logsOption.addEventListener('click', openLogs);
+        logsOption.addEventListener('touchend', function(ev) { ev.preventDefault(); openLogs(); });
+      }
+      if (copyBtn && logsContent) {
+        copyBtn.addEventListener('click', function() {
+          try { navigator.clipboard.writeText(logsContent.textContent || ''); showCopied(); } catch (_) {}
+        });
+        copyBtn.addEventListener('touchend', function(ev) { ev.preventDefault(); try { navigator.clipboard.writeText(logsContent.textContent || ''); showCopied(); } catch (_) {} });
+      }
+    })();
+  </script>
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

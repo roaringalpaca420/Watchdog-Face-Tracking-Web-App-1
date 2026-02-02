@@ -300,9 +300,8 @@ class Avatar {
 
 let faceLandmarker: FaceLandmarker | null = null;
 let video: HTMLVideoElement;
-
-const scene = new BasicScene();
-const avatar = new Avatar(AVATAR_MODEL_URL, scene.scene);
+let scene: BasicScene;
+let avatar: Avatar;
 
 function setStatus(text: string, hide = false): void {
   logMsg(text);
@@ -388,6 +387,20 @@ async function streamWebcam(): Promise<void> {
 async function runDemo(): Promise<void> {
   setupLogsUI();
   logMsg(`App started. Secure: ${window.isSecureContext}. UA: ${navigator.userAgent.slice(0, 60)}…`);
+  setStatus('Loading…');
+
+  try {
+    logMsg('Creating scene…');
+    scene = new BasicScene();
+    avatar = new Avatar(AVATAR_MODEL_URL, scene.scene);
+    logMsg('Scene ready.');
+  } catch (e) {
+    const errMsg = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+    logMsg(`Scene error: ${errMsg}`);
+    setStatus(`Error: ${errMsg}. Tap gear → Logs to copy.`);
+    return;
+  }
+
   setStatus('Requesting camera…');
   await streamWebcam();
   setStatus('Loading MediaPipe…');
@@ -412,8 +425,13 @@ async function runDemo(): Promise<void> {
   } catch (e) {
     const errMsg = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
     logMsg(`MediaPipe error: ${errMsg}`);
-    setStatus(`MediaPipe error. Tap Logs to copy.`);
+    setStatus(`MediaPipe error. Tap gear → Logs to copy.`);
   }
 }
 
-runDemo();
+runDemo().catch((e) => {
+  const msg = e instanceof Error ? e.message : String(e);
+  logMsg(`runDemo failed: ${msg}`);
+  const statusEl = document.getElementById('status');
+  if (statusEl) statusEl.textContent = `Error. Tap gear → Logs to copy.`;
+});
