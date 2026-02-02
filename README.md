@@ -48,8 +48,8 @@ Real-time face-tracking avatar in the browser using **MediaPipe Face Landmarker*
 ## Adding your watchdog avatar
 
 1. In Blender, run `Watchdog Model/create_watchdog_model.py` and export as **glTF 2.0 (.glb)** with shape keys enabled.
-2. Save as `watchdog_head.glb` in the **project root** (same folder as `index.html`).
-3. Push to GitHub; the app loads the model and texture from the **Watchdog Model** folder. If the GLB is missing, a **?** placeholder tracks your head. See [ROOT-FILES.md](./ROOT-FILES.md) for required files.
+2. Save as `watchdog_head.glb` in the **Watchdog Model** folder (same folder as `Watchdog Image.png`).
+3. Push to GitHub; the app loads the model and texture from that folder. If the GLB is missing, a **?** placeholder tracks your head. See [ROOT-FILES.md](./ROOT-FILES.md) for required files.
 
 See [Watchdog Model/README.md](./Watchdog%20Model/README.md) and [ART_GUIDE.md](./Watchdog%20Model/ART_GUIDE.md) for modeling details.
 
