@@ -20,8 +20,18 @@ import {
 const logLines = [];
 function logMsg(msg) {
   const now = new Date();
-  const ts = now.toISOString(); // full date + time, e.g. 2026-02-02T07:27:18.449Z
-  const line = `[${ts}] ${msg}`;
+  const tsUtc = now.toISOString(); // e.g. 2026-02-02T07:27:18.449Z
+  const tsLocal = now.toLocaleString("en-US", {
+    timeZone: "America/Los_Angeles", // San Diego (Pacific Time)
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  }); // e.g. 02/01/2026, 11:27:18 PM
+  const line = `[UTC ${tsUtc} | PT ${tsLocal}] ${msg}`;
   logLines.push(line);
   console.log(msg);
   const pre = document.getElementById("logs-content");
@@ -63,14 +73,15 @@ const WATCHDOG_TEXTURE_URL = "Watchdog Model/Watchdog Image.png";
 class BasicScene {
   constructor() {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x000000);
+    this.scene.background = null; // no solid color background
 
     this.camera = new THREE.PerspectiveCamera(60, 1, 0.1, 2000);
     this.camera.position.set(0, 0, 0);
     this.camera.lookAt(0, 0, AVATAR_DEPTH);
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-    this.renderer.setClearColor(0x000000, 1);
+    // Transparent canvas so we’re not painting a black rectangle
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    this.renderer.setClearColor(0x000000, 0);
     THREE.ColorManagement.legacy = false;
     this.renderer.outputEncoding = THREE.sRGBEncoding;
 
@@ -376,25 +387,34 @@ async function streamWebcam() {
 
 async function runDemo() {
   logMsg(`App started. Secure: ${window.isSecureContext}.`);
-  setStatus("Loading…");
+  setStatus("Loading 3D watchdog…");
 
-  try {
-    await streamWebcam();
-  } catch (_) {
-    return;
-  }
-
-  setStatus("Starting 3D view…");
+  // 1) Always create the 3D scene + dog immediately, before camera permissions.
   try {
     scene = new BasicScene();
     avatar = new Avatar(getAvatarModelUrl(), scene.scene, { textureUrl: WATCHDOG_TEXTURE_URL });
-    logMsg("Scene created.");
+    logMsg("Scene created (watchdog should be visible even without camera).");
   } catch (e) {
     logMsg(`Scene error: ${e.message || e}`);
     setStatus(`Scene error. Tap gear → Logs to copy.`);
     return;
   }
 
+  // 2) Then try to start the camera for tracking.
+  let cameraOk = true;
+  try {
+    await streamWebcam();
+  } catch (e) {
+    cameraOk = false;
+    const msg = e?.message || String(e || "unknown");
+    logMsg(`Camera unavailable or denied: ${msg}`);
+    setStatus("No camera / permission denied. Watchdog will show but not track.");
+  }
+
+  // 3) If no camera, we stop here (dog stays visible but static).
+  if (!cameraOk) return;
+
+  // 4) If camera is OK, load MediaPipe for tracking.
   setStatus("Loading face model…");
   logMsg("Loading MediaPipe…");
   try {
