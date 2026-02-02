@@ -402,9 +402,10 @@ function detectFaceLandmarks(time) {
     const e = matrix.elements;
     const col0 = new THREE.Vector3(e[0], e[1], e[2]);
     const headScaleRaw = col0.length() || 1;
-    // Base around 1.5, but clamp to a safe range so it never explodes.
-    let dynamicScale = 1.5 / headScaleRaw;
-    dynamicScale = Math.max(0.8, Math.min(3.0, dynamicScale));
+    // Base around 4, but clamp to a safe range so it never becomes a tiny speck
+    // or fills the whole screen. This should feel good on an iPhone 15 Pro.
+    let dynamicScale = 4 / headScaleRaw;
+    dynamicScale = Math.max(2.0, Math.min(6.0, dynamicScale));
 
     avatar.applyMatrix(matrix, { scale: dynamicScale });
 
