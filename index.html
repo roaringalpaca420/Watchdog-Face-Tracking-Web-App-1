@@ -13,6 +13,23 @@
     <video autoplay playsinline muted id="video"></video>
     <div id="status">Starting camera…</div>
   </div>
+  <button type="button" id="gear-btn" class="gear-btn" aria-label="Settings">⚙</button>
+  <div id="settings-panel" class="settings-panel" hidden>
+    <div class="settings-header">
+      <span>Settings</span>
+      <button type="button" id="settings-close" class="settings-close" aria-label="Close">×</button>
+    </div>
+    <div class="settings-body">
+      <button type="button" class="settings-option" id="logs-option">
+        <span>Logs</span>
+      </button>
+      <div id="logs-dropdown" class="logs-dropdown" hidden>
+        <pre id="logs-content" class="logs-content"></pre>
+        <button type="button" id="logs-copy" class="logs-copy-btn">Copy</button>
+        <span id="logs-copied-msg" class="logs-copied-msg" hidden>Copied!</span>
+      </div>
+    </div>
+  </div>
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

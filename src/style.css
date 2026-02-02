@@ -1,20 +1,25 @@
-/* Watchdog Face Tracking — mobile-first */
+/* Watchdog Face Tracking — mobile-first, black page */
 
 * {
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
-  background-color: #0a0a0a;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background-color: #000000;
+  color: #e0e0e0;
   min-height: 100dvh;
   min-height: 100vh;
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .container {
@@ -27,6 +32,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  background-color: #000000;
 }
 
 canvas {
@@ -60,6 +66,155 @@ video {
 #status.hidden {
   opacity: 0;
   transition: opacity 0.3s ease;
+}
+
+/* Gear button and settings scene */
+.gear-btn {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 10;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: #e0e0e0;
+  background: rgba(40, 40, 40, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.gear-btn:active {
+  background: rgba(60, 60, 60, 0.95);
+}
+
+.settings-panel {
+  position: fixed;
+  inset: 1rem;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  background: #0a0a0a;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.8);
+}
+
+.settings-panel[hidden] {
+  display: none !important;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+}
+
+.settings-header span {
+  flex: 1;
+  font-size: 1rem;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #e0e0e0;
+}
+
+.settings-close {
+  padding: 0.25rem 0.5rem;
+  font-size: 1.25rem;
+  line-height: 1;
+  font-family: system-ui, sans-serif;
+  color: #e0e0e0;
+  background: rgba(60, 60, 60, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.settings-body {
+  flex: 1;
+  overflow: auto;
+  padding: 0.5rem;
+}
+
+.settings-option {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 0.9375rem;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #e0e0e0;
+  text-align: left;
+  background: rgba(50, 50, 50, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.settings-option:active {
+  background: rgba(70, 70, 70, 0.8);
+}
+
+.settings-option + .logs-dropdown {
+  margin-top: 0.5rem;
+}
+
+.logs-dropdown {
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  background: rgba(20, 20, 20, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+}
+
+.logs-dropdown[hidden] {
+  display: none !important;
+}
+
+.logs-content {
+  margin: 0 0 0.5rem 0;
+  padding: 0.5rem;
+  max-height: 12rem;
+  overflow: auto;
+  font-size: 0.7rem;
+  font-family: ui-monospace, monospace;
+  color: #c0c0c0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  border-radius: 4px;
+  background: #0a0a0a;
+}
+
+.logs-copy-btn {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #e0e0e0;
+  background: rgba(60, 60, 60, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.logs-copy-btn:active {
+  background: rgba(80, 80, 80, 0.95);
+}
+
+.logs-copied-msg {
+  margin-left: 0.5rem;
+  font-size: 0.8rem;
+  color: #8bc34a;
+}
+
+.logs-copied-msg[hidden] {
+  display: none !important;
 }
 
 @media (max-width: 500px) {
