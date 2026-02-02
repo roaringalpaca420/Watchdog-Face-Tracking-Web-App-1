@@ -53,8 +53,10 @@ function setStatus(text, hide = false) {
 // Config
 // ---------------------------------------------------------------------------
 
-const AVATAR_SCALE = 40;
-const AVATAR_DEPTH = -40;
+// How big / how far the head sits in front of the camera.
+// Bigger SCALE and smaller (closer to 0) DEPTH = larger on screen.
+const AVATAR_SCALE = 80;
+const AVATAR_DEPTH = -25;
 
 function getAvatarModelUrl() {
   try {
