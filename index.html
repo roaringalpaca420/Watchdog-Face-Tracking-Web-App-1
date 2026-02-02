@@ -2,12 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#000000" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <title>Watchdog Face Tracking</title>
-  <link rel="stylesheet" href="/src/style.css" />
+  <link rel="stylesheet" href="./src/style.css" />
   <style>html,body{background:#000!important;color:#e0e0e0;}</style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js",
+      "three/": "https://cdn.jsdelivr.net/npm/three@0.150.1/"
+    }
+  }
+  </script>
 </head>
 <body>
   <div class="container">
@@ -73,6 +82,6 @@
       }
     })();
   </script>
-  <script type="module" src="/src/main.ts"></script>
+  <script type="module" src="./main.js"></script>
 </body>
 </html>
